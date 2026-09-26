@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: teawither
       POSTGRES_PASSWORD: teawither
     ports:
-      - "5790:5432"
+      - "5800:5432"
     volumes:
       - teawither_pg:/var/lib/postgresql/data
     healthcheck:
@@ -19,7 +19,7 @@ services:
   web:
     build: .
     ports:
-      - "4450:4100"
+      - "4460:4100"
     environment:
       DJANGO_DEBUG: "0"
       DJANGO_ALLOWED_HOSTS: "*"
@@ -28,7 +28,7 @@ services:
       POSTGRES_DB: teawither
       POSTGRES_USER: teawither
       POSTGRES_PASSWORD: teawither
-      CSRF_TRUSTED_ORIGINS: "http://localhost:4450,http://127.0.0.1:4450"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:4460,http://127.0.0.1:4460"
       USE_GUNICORN: "1"
     depends_on:
       db:

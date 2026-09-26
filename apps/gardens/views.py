@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -13,26 +14,38 @@ from django.views.generic import (
 )
 
 from .forms import GardenForm, TroughForm, WitherBatchForm
-from .models import Garden, Trough, WitherBatch
+from .models import (
+    Garden,
+    InvalidStatusTransition,
+    Trough,
+    WitherBatch,
+    transition_trough_status,
+)
 
 
 def _wants_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
+def _trough_status_counts():
+    """首页状态卡与列表过滤共用的唯一计数口径，保证两边可对账。"""
+    rows = {
+        row["status"]: row["n"]
+        for row in Trough.objects.values("status").annotate(n=Count("id"))
+    }
+    return {status: rows.get(status, 0) for status, _ in Trough.STATUS_CHOICES}
+
+
 @login_required
 def home(request):
+    status_counts = _trough_status_counts()
     context = {
         "garden_count": Garden.objects.count(),
         "trough_count": Trough.objects.count(),
         "batch_count": WitherBatch.objects.count(),
-        "ready_count": Trough.objects.filter(status=Trough.STATUS_READY).count(),
-        "withering_count": Trough.objects.filter(
-            status=Trough.STATUS_WITHERING
-        ).count(),
-        "loading_count": Trough.objects.filter(
-            status=Trough.STATUS_LOADING
-        ).count(),
+        "ready_count": status_counts[Trough.STATUS_READY],
+        "withering_count": status_counts[Trough.STATUS_WITHERING],
+        "loading_count": status_counts[Trough.STATUS_LOADING],
     }
     return render(request, "home.html", context)
 
@@ -100,15 +113,36 @@ class TroughListView(LoginRequiredMixin, ListView):
     template_name = "troughs/list.html"
     context_object_name = "troughs"
 
+    def _filter_status(self):
+        status = self.request.GET.get("status", "")
+        return status if status in dict(Trough.STATUS_CHOICES) else ""
+
     def get_queryset(self):
-        return Trough.objects.select_related("garden").all()
+        qs = Trough.objects.select_related("garden")
+        status = self._filter_status()
+        if status:
+            qs = qs.filter(status=status)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        status_counts = _trough_status_counts()
+        labels = dict(Trough.STATUS_CHOICES)
+        context["current_status"] = self._filter_status()
+        context["status_counts"] = status_counts
+        context["total_count"] = sum(status_counts.values())
+        context["status_filters"] = [
+            {"value": value, "label": labels[value], "count": status_counts[value]}
+            for value, _label in Trough.STATUS_CHOICES
+        ]
+        return context
 
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
         if _wants_htmx(request):
             html = render_to_string(
                 "troughs/_table.html",
-                {"troughs": self.object_list},
+                self.get_context_data(),
                 request=request,
             )
             return HttpResponse(html)
@@ -145,6 +179,46 @@ class TroughDeleteView(LoginRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "萎凋槽已删除")
         return super().form_valid(form)
+
+
+@login_required
+def trough_change_status(request, pk):
+    """槽位状态变更的唯一入口：服务端行级锁互斥，见 models.transition_trough_status。
+
+    任何人都只能通过这里改 status；expected_status 是列表渲染时该槽的当前态，
+    并发下他人先改走状态时，后到的提交会被整体回滚并以中文消息拒绝。
+    """
+    if request.method != "POST":
+        return redirect("trough_list")
+
+    trough = get_object_or_404(Trough, pk=pk)
+    new_status = request.POST.get("new_status", "")
+    expected_status = request.POST.get("expected_status") or None
+    filter_status = request.POST.get("filter_status", "")
+    if filter_status not in dict(Trough.STATUS_CHOICES):
+        filter_status = ""
+
+    def _redirect_to_list():
+        url = reverse("trough_list")
+        if filter_status:
+            url += f"?status={filter_status}"
+        return redirect(url)
+
+    try:
+        transition_trough_status(
+            trough.pk, new_status, expected_status=expected_status
+        )
+    except InvalidStatusTransition as exc:
+        # 业务拒绝或并发落败：事务已回滚，无半更新，列表照常打开。
+        messages.error(request, "「%s」状态变更被拒绝：%s"
+                       % (trough, " ".join(exc.messages)))
+        return _redirect_to_list()
+
+    messages.success(
+        request,
+        "「%s」已变为「%s」。" % (trough, Trough.status_label(new_status)),
+    )
+    return _redirect_to_list()
 
 
 # ---- WitherBatch ----

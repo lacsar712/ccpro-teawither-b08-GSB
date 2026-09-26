@@ -8,9 +8,19 @@
   <div class="stat"><div class="num">{{ garden_count }}</div><div class="label">茶园</div></div>
   <div class="stat"><div class="num">{{ trough_count }}</div><div class="label">萎凋槽</div></div>
   <div class="stat"><div class="num">{{ batch_count }}</div><div class="label">萎凋批次</div></div>
-  <div class="stat"><div class="num">{{ loading_count }}</div><div class="label">装叶中</div></div>
-  <div class="stat"><div class="num">{{ withering_count }}</div><div class="label">萎凋中</div></div>
-  <div class="stat"><div class="num">{{ ready_count }}</div><div class="label">可下槽</div></div>
+  <a class="stat stat-link" href="{% url 'trough_list' %}?status=loading">
+    <div class="num">{{ loading_count }}</div><div class="label">装叶中</div>
+  </a>
+  <a class="stat stat-link" href="{% url 'trough_list' %}?status=withering">
+    <div class="num">{{ withering_count }}</div><div class="label">萎凋中</div>
+  </a>
+  <a class="stat stat-link" href="{% url 'trough_list' %}?status=ready">
+    <div class="num">{{ ready_count }}</div><div class="label">可下槽</div>
+  </a>
 </div>
-<p class="muted" style="margin-top:1.25rem">规则提示：槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。</p>
+<p class="muted" style="margin-top:1.25rem">
+  规则提示：槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。<br>
+  状态卡数字与「萎凋槽」列表按状态过滤后的行数同源，可逐态对账；
+  两人几乎同时对同一槽提交时，服务端行级锁保证最多一笔合法迁移成功，另一笔被拒绝且不会留下半更新。
+</p>
 {% endblock %}

@@ -19,6 +19,21 @@
       <td>{{ t.loadKg }}</td>
       <td><span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
       <td class="actions">
+        <form method="post"
+              action="{% url 'trough_change_status' t.pk %}"
+              class="inline-status-form">
+          {% csrf_token %}
+          {# 回跳当前过滤视图；服务端以锁内真实状态为准做并发互斥 #}
+          <input type="hidden" name="filter_status" value="{{ current_status|default:'' }}">
+          <input type="hidden" name="expected_status" value="{{ t.status }}">
+          {% if t.status == 'loading' %}
+          <button class="btn btn-sm" type="submit" name="new_status" value="withering">开始萎凋</button>
+          {% elif t.status == 'withering' %}
+          <button class="btn btn-sm" type="submit" name="new_status" value="ready">标记可下槽</button>
+          {% elif t.status == 'ready' %}
+          <button class="btn btn-sm btn-secondary" type="submit" name="new_status" value="loading">出槽重装</button>
+          {% endif %}
+        </form>
         <a class="btn btn-sm btn-secondary" href="{% url 'trough_edit' t.pk %}">编辑</a>
         <a class="btn btn-sm btn-danger" href="{% url 'trough_delete' t.pk %}">删除</a>
       </td>
@@ -27,5 +42,5 @@
   </tbody>
 </table>
 {% else %}
-<p class="empty">暂无萎凋槽。</p>
+<p class="empty">暂无萎凋槽{% if current_status %}（当前过滤态下）{% endif %}。</p>
 {% endif %}

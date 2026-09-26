@@ -15,15 +15,16 @@ class GardenForm(forms.ModelForm):
 
 
 class TroughForm(forms.ModelForm):
+    # status 刻意不放进表单：状态只能由列表上的状态操作按钮经
+    # transition_trough_status（行级锁 + 状态机）变更，编辑页无法绕过互斥。
     class Meta:
         model = Trough
-        fields = ["garden", "troughCode", "cultivar", "loadKg", "status"]
+        fields = ["garden", "troughCode", "cultivar", "loadKg"]
         widgets = {
             "garden": forms.Select(attrs={"class": "input"}),
             "troughCode": forms.TextInput(attrs={"class": "input"}),
             "cultivar": forms.TextInput(attrs={"class": "input"}),
             "loadKg": forms.NumberInput(attrs={"class": "input", "step": "0.01"}),
-            "status": forms.Select(attrs={"class": "input"}),
         }
 
 

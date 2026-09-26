@@ -295,3 +295,62 @@ table.data tr:hover td {
   text-align: center;
   color: var(--muted);
 }
+
+/* ---- 状态过滤 chips 与并发状态操作 ---- */
+
+.filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  text-decoration: none !important;
+  font-size: 0.9rem;
+}
+
+.chip b {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-weight: 600;
+}
+
+.chip-active {
+  background: var(--tea-green);
+  border-color: var(--tea-green-dark);
+  color: #fff !important;
+}
+
+.chip-active b {
+  background: rgba(255, 255, 250, 0.25);
+}
+
+.chip-loading { border-left: 4px solid #ffc107; }
+.chip-withering { border-left: 4px solid #28a745; }
+
+.inline-status-form {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+/* 首页可点状态卡 */
+.stat-link {
+  text-decoration: none !important;
+  transition: transform 0.1s ease;
+}
+
+.stat-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}

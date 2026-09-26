@@ -28,6 +28,11 @@ urlpatterns = [
         views.TroughDeleteView.as_view(),
         name="trough_delete",
     ),
+    path(
+        "troughs/<int:pk>/change-status/",
+        views.trough_change_status,
+        name="trough_change_status",
+    ),
     path("batches/", views.BatchListView.as_view(), name="batch_list"),
     path("batches/new/", views.BatchCreateView.as_view(), name="batch_create"),
     path(
