@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>工作台</h1>
+</div>
+<div class="stats">
+  <div class="stat"><div class="num">{{ garden_count }}</div><div class="label">茶园</div></div>
+  <div class="stat"><div class="num">{{ trough_count }}</div><div class="label">萎凋槽</div></div>
+  <div class="stat"><div class="num">{{ batch_count }}</div><div class="label">萎凋批次</div></div>
+  <div class="stat"><div class="num">{{ loading_count }}</div><div class="label">装叶中</div></div>
+  <div class="stat"><div class="num">{{ withering_count }}</div><div class="label">萎凋中</div></div>
+  <div class="stat"><div class="num">{{ ready_count }}</div><div class="label">可下槽</div></div>
+</div>
+<p class="muted" style="margin-top:1.25rem">规则提示：槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。</p>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% if gardens %}
+<table class="data">
+  <thead>
+    <tr>
+      <th>名称</th>
+      <th>海拔带</th>
+      <th>备注</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for g in gardens %}
+    <tr>
+      <td>{{ g.name }}</td>
+      <td>{{ g.altitudeBand }}</td>
+      <td>{{ g.notes|default:"—" }}</td>
+      <td class="actions">
+        <a class="btn btn-sm btn-secondary" href="{% url 'garden_edit' g.pk %}">编辑</a>
+        <a class="btn btn-sm btn-danger" href="{% url 'garden_delete' g.pk %}">删除</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">暂无茶园，请先新建。</p>
+{% endif %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}萎凋槽{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>萎凋槽</h1>
+  <div class="actions">
+    <button class="btn btn-secondary btn-sm"
+            hx-get="{% url 'trough_list' %}"
+            hx-target="#trough-table"
+            hx-swap="innerHTML">刷新列表</button>
+    <a class="btn" href="{% url 'trough_create' %}">新建槽位</a>
+  </div>
+</div>
+<div class="card" id="trough-table">
+  {% include "troughs/_table.html" %}
+</div>
+{% endblock %}

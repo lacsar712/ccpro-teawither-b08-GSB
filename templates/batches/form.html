@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}编辑批次{% else %}新建批次{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if object %}编辑萎凋批次{% else %}新建萎凋批次{% endif %}</h1>
+  <a class="btn btn-secondary" href="{% url 'batch_list' %}">返回列表</a>
+</div>
+<div class="card">
+  <form method="post" class="form-grid">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {{ field.errors }}
+    </div>
+    {% endfor %}
+    {{ form.non_field_errors }}
+    <button class="btn" type="submit">保存</button>
+  </form>
+</div>
+{% endblock %}

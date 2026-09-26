@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}删除茶园{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>删除茶园</h1>
+</div>
+<div class="card">
+  <p>确认删除茶园「{{ object.name }}」？其下槽位与批次将一并删除。</p>
+  <form method="post" class="actions">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">确认删除</button>
+    <a class="btn btn-secondary" href="{% url 'garden_list' %}">取消</a>
+  </form>
+</div>
+{% endblock %}

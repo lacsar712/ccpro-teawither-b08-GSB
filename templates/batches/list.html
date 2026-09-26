@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}萎凋批次{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>萎凋批次</h1>
+  <div class="actions">
+    <button class="btn btn-secondary btn-sm"
+            hx-get="{% url 'batch_list' %}"
+            hx-target="#batch-table"
+            hx-swap="innerHTML">刷新列表</button>
+    <a class="btn" href="{% url 'batch_create' %}">新建批次</a>
+  </div>
+</div>
+<div class="card" id="batch-table">
+  {% include "batches/_table.html" %}
+</div>
+{% endblock %}

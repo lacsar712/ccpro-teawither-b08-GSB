@@ -1,0 +1,31 @@
+{% if batches %}
+<table class="data">
+  <thead>
+    <tr>
+      <th>茶园/槽位</th>
+      <th>开始时间</th>
+      <th>目标含水率</th>
+      <th>实测含水率</th>
+      <th>揉捻等级</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in batches %}
+    <tr>
+      <td>{{ b.trough.garden.name }} / {{ b.trough.troughCode }}</td>
+      <td>{{ b.startedAt|date:"Y-m-d H:i" }}</td>
+      <td>{{ b.targetMoisture }}%</td>
+      <td>{% if b.actualMoisture != None %}{{ b.actualMoisture }}%{% else %}—{% endif %}</td>
+      <td>{{ b.rollGrade }}</td>
+      <td class="actions">
+        <a class="btn btn-sm btn-secondary" href="{% url 'batch_edit' b.pk %}">编辑</a>
+        <a class="btn btn-sm btn-danger" href="{% url 'batch_delete' b.pk %}">删除</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">暂无萎凋批次。</p>
+{% endif %}

@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}茶萎凋台账{% endblock %} · TeaWither</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+  {% if user.is_authenticated %}
+  <nav class="topnav">
+    <a class="brand" href="{% url 'home' %}">TeaWither 萎凋台账</a>
+    <div class="nav-links">
+      <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">首页</a>
+      <a href="{% url 'garden_list' %}" class="{% if 'garden' in request.resolver_match.url_name %}active{% endif %}">茶园</a>
+      <a href="{% url 'trough_list' %}" class="{% if 'trough' in request.resolver_match.url_name %}active{% endif %}">萎凋槽</a>
+      <a href="{% url 'batch_list' %}" class="{% if 'batch' in request.resolver_match.url_name %}active{% endif %}">萎凋批次</a>
+    </div>
+    <div class="nav-user">
+      <span>{{ user.username }}</span>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-secondary" style="background:transparent;border:1px solid rgba(255,255,255,.45)">退出</button>
+      </form>
+    </div>
+  </nav>
+  {% endif %}
+
+  <main class="container">
+    {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
