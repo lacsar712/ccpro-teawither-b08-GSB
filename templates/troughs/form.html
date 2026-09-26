@@ -8,6 +8,9 @@
 <div class="card">
   <form method="post" class="form-grid">
     {% csrf_token %}
+    {% if object %}
+    <input type="hidden" name="expected_status" value="{{ object.status }}">
+    {% endif %}
     {% for field in form %}
     <div class="form-row">
       <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -16,7 +19,7 @@
     </div>
     {% endfor %}
     {{ form.non_field_errors }}
-    <p class="muted">设为「可下槽」时，最新批次实测含水率须已填且 ≤ 40%。</p>
+    <p class="muted">设为「可下槽」时，最新批次实测含水率须已填且 ≤ 40%。状态迁移路径：装叶中→萎凋中→可下槽→装叶中（萎凋中可退回装叶中）。若提交时他人已抢先变更该槽状态，本次保存会被拒绝并提示刷新。</p>
     <button class="btn" type="submit">保存</button>
   </form>
 </div>

@@ -26,6 +26,14 @@ class Trough(models.Model):
         (STATUS_READY, "可下槽"),
     ]
 
+    # 合法状态迁移图：装叶中→萎凋中→可下槽→装叶中（萎凋中可退回装叶中）。
+    # 并发下由 services.update_trough 以行级锁 + 条件更新保证“最多一回成功”。
+    STATUS_TRANSITIONS = {
+        STATUS_LOADING: {STATUS_WITHERING},
+        STATUS_WITHERING: {STATUS_READY, STATUS_LOADING},
+        STATUS_READY: {STATUS_LOADING},
+    }
+
     garden = models.ForeignKey(
         Garden,
         on_delete=models.CASCADE,
@@ -56,11 +64,40 @@ class Trough(models.Model):
     def __str__(self):
         return f"{self.garden.name}-{self.troughCode}"
 
+    @classmethod
+    def is_legal_transition(cls, from_status, to_status):
+        """状态迁移是否合法（同状态不算迁移，始终允许）。"""
+        if from_status == to_status:
+            return True
+        return to_status in cls.STATUS_TRANSITIONS.get(from_status, set())
+
     def latest_batch(self):
         return self.batches.order_by("-startedAt", "-id").first()
 
     def clean(self):
         super().clean()
+        if self.pk:
+            current_status = (
+                Trough.objects.filter(pk=self.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+            if (
+                current_status is not None
+                and not self.is_legal_transition(current_status, self.status)
+            ):
+                labels = dict(self.STATUS_CHOICES)
+                raise ValidationError(
+                    {
+                        "status": (
+                            "非法状态迁移：{src} → {dst}。允许路径："
+                            "装叶中→萎凋中→可下槽→装叶中（萎凋中可退回装叶中）。"
+                        ).format(
+                            src=labels.get(current_status, current_status),
+                            dst=labels.get(self.status, self.status),
+                        )
+                    }
+                )
         if self.status != self.STATUS_READY:
             return
         latest = None

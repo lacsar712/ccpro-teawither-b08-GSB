@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
+from django.db import OperationalError
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -14,6 +16,7 @@ from django.views.generic import (
 
 from .forms import GardenForm, TroughForm, WitherBatchForm
 from .models import Garden, Trough, WitherBatch
+from .services import TroughStatusConflict, update_trough
 
 
 def _wants_htmx(request):
@@ -101,14 +104,31 @@ class TroughListView(LoginRequiredMixin, ListView):
     context_object_name = "troughs"
 
     def get_queryset(self):
-        return Trough.objects.select_related("garden").all()
+        qs = Trough.objects.select_related("garden").all()
+        self.current_status = self.request.GET.get("status", "")
+        if self.current_status not in dict(Trough.STATUS_CHOICES):
+            self.current_status = ""
+        if self.current_status:
+            qs = qs.filter(status=self.current_status)
+        return qs
+
+    def _filter_context(self):
+        return {
+            "current_status": getattr(self, "current_status", ""),
+            "status_choices": Trough.STATUS_CHOICES,
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self._filter_context())
+        return context
 
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
         if _wants_htmx(request):
             html = render_to_string(
                 "troughs/_table.html",
-                {"troughs": self.object_list},
+                {"troughs": self.object_list, **self._filter_context()},
                 request=request,
             )
             return HttpResponse(html)
@@ -133,8 +153,29 @@ class TroughUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("trough_list")
 
     def form_valid(self, form):
+        # 保存路径走 services.update_trough：行级锁 + 条件更新保证
+        # 并发下最多一回合法迁移成功，失败整事务回滚不留半更新。
+        try:
+            update_trough(
+                trough_id=self.object.pk,
+                expected_status=self.request.POST.get("expected_status"),
+                changes=form.cleaned_data,
+            )
+        except TroughStatusConflict as exc:
+            messages.error(self.request, str(exc))
+            return redirect("trough_edit", pk=self.object.pk)
+        except OperationalError:
+            # SQLite 开发库无行级锁，并发写入可能返回 database is locked；
+            # 与冲突同等处理：拒绝本次保存，绝不半更新。
+            messages.error(
+                self.request, "保存被拒绝：数据库繁忙（可能有并发修改），请刷新后重试。"
+            )
+            return redirect("trough_edit", pk=self.object.pk)
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
         messages.success(self.request, "萎凋槽已更新")
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
 
 class TroughDeleteView(LoginRequiredMixin, DeleteView):

@@ -5,10 +5,21 @@
   <h1>萎凋槽</h1>
   <div class="actions">
     <button class="btn btn-secondary btn-sm"
-            hx-get="{% url 'trough_list' %}"
+            hx-get="{% url 'trough_list' %}{% if current_status %}?status={{ current_status }}{% endif %}"
             hx-target="#trough-table"
             hx-swap="innerHTML">刷新列表</button>
     <a class="btn" href="{% url 'trough_create' %}">新建槽位</a>
+  </div>
+</div>
+<div class="card" style="margin-bottom:1rem">
+  <div class="actions">
+    <span class="muted">按状态过滤：</span>
+    <a class="btn btn-sm {% if not current_status %}btn{% else %}btn-secondary{% endif %}"
+       href="{% url 'trough_list' %}">全部</a>
+    {% for value, label in status_choices %}
+    <a class="btn btn-sm {% if current_status == value %}btn{% else %}btn-secondary{% endif %}"
+       href="{% url 'trough_list' %}?status={{ value }}">{{ label }}</a>
+    {% endfor %}
   </div>
 </div>
 <div class="card" id="trough-table">
